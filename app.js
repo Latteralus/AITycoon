@@ -1,9 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- GAME STATE ---
+    // --- NEW GAME STATE ---
     let gameState = {
         money: 100,
         lifetimeRevenue: 0,
         prestigePoints: 0,
+        customers: [{ id: 1, satisfaction: 1.0 }, { id: 2, satisfaction: 1.0 }],
         upgrades: {
             gpus: 0,
             edgeServers: 0,
@@ -12,70 +13,110 @@ document.addEventListener('DOMContentLoaded', () => {
             streamingApi: 0,
             marketing: 0,
         },
+        eventLog: ['Welcome to AI Tycoon! You have your first 2 clients.'],
+        activeTab: 'dashboard',
     };
 
-    // --- GAME CONFIGURATION ---
+    // --- NEW GAME CONFIGURATION ---
     const PRESTIGE_REQUIREMENT = 1_000_000_000;
-    const PRICE_PER_REQUEST = 0.01;
-    const TOKENS_PER_REQUEST = 1000;
+    const TOKENS_PER_REQUEST_BASE = 500;
+    const PRICE_PER_TOKEN = 0.00002; // $0.01 per 500 tokens
     const TICK_RATE = 1000; // ms
 
     const upgradesData = {
-        gpus: { name: 'GPUs', baseCost: 100, costMultiplier: 1.15, effect: 0.10, description: '+10% Requests/sec' },
-        edgeServers: { name: 'Edge Servers', baseCost: 200, costMultiplier: 1.15, effect: 0.05, description: '+5% Uptime' },
-        accuracy: { name: 'Accuracy', baseCost: 150, costMultiplier: 1.15, effect: 0.05, description: '+5% Customer Satisfaction' },
-        contextLength: { name: 'Context Length', baseCost: 300, costMultiplier: 1.15, effect: 0.05, description: '+5% Requests/sec' },
-        streamingApi: { name: 'Streaming API', baseCost: 250, costMultiplier: 1.15, effect: 0.05, description: '+5% Requests/sec' },
-        marketing: { name: 'Marketing Campaign', baseCost: 400, costMultiplier: 1.15, effect: 0.10, description: '+10% Customer Acquisition' },
+        // Equipment Tab
+        gpus: { name: 'GPUs', tab: 'equipment', baseCost: 100, costMultiplier: 1.2, description: 'Increases max requests handled per second by 10.' },
+        edgeServers: { name: 'Edge Servers', tab: 'equipment', baseCost: 200, costMultiplier: 1.2, description: 'Increases server uptime by 1%.' },
+        // Training Tab
+        accuracy: { name: 'Accuracy', tab: 'training', baseCost: 150, costMultiplier: 1.15, description: 'Increases base customer satisfaction.' },
+        contextLength: { name: 'Context Length', tab: 'training', baseCost: 300, costMultiplier: 1.15, description: 'Increases tokens per request, boosting revenue.' },
+        streamingApi: { name: 'Streaming API', tab: 'training', baseCost: 250, costMultiplier: 1.2, description: 'Slightly increases satisfaction for all customers.' },
+        marketing: { name: 'Marketing Campaign', tab: 'training', baseCost: 400, costMultiplier: 1.3, description: 'Increases the chance of acquiring new customers.' },
     };
 
-    // --- CORE LOGIC FUNCTIONS ---
-    const getPrestigeBonus = (type) => {
-        if (type === 'revenue') return 1 + (gameState.prestigePoints * 0.02);
-        if (type === 'cost') return 1 - (gameState.prestigePoints * 0.02);
-        return 1;
+    // --- SIMULATION CORE ---
+    const logEvent = (message) => {
+        gameState.eventLog.unshift(`[Tick ${Math.round(performance.now()/1000)}] ${message}`);
+        if (gameState.eventLog.length > 20) {
+            gameState.eventLog.pop();
+        }
     };
 
+    const gameLoop = () => {
+        // 1. Calculate current stats from upgrades
+        const maxRequests = 10 + (gameState.upgrades.gpus * 10);
+        const uptimeChance = 0.95 + (gameState.upgrades.edgeServers * 0.01);
+        const newCustomerChance = 0.01 + (gameState.upgrades.marketing * 0.005);
+        const tokensPerRequest = TOKENS_PER_REQUEST_BASE + (gameState.upgrades.contextLength * 100);
+
+        // 2. Server Uptime Check
+        if (Math.random() > uptimeChance) {
+            logEvent("⚠️ Server Down! No requests processed.");
+            gameState.customers.forEach(c => c.satisfaction = Math.max(0.1, c.satisfaction - 0.01));
+            updateUI();
+            return;
+        }
+
+        // 3. Simulate Customer Requests
+        let requests = [];
+        gameState.customers.forEach(customer => {
+            const requestChance = 0.1 + customer.satisfaction * 0.2; // Chance per tick
+            if (Math.random() < requestChance) {
+                requests.push({ customerId: customer.id });
+            }
+        });
+
+        if (requests.length > 0) {
+            logEvent(`Incoming ${requests.length} requests...`);
+        }
+
+        // 4. Process Requests
+        const processedRequests = requests.slice(0, maxRequests);
+        const droppedRequests = requests.slice(maxRequests);
+
+        if (droppedRequests.length > 0) {
+            logEvent(`🚨 Dropped ${droppedRequests.length} requests! (Capacity: ${maxRequests})`);
+            droppedRequests.forEach(req => {
+                const customer = gameState.customers.find(c => c.id === req.customerId);
+                if (customer) customer.satisfaction = Math.max(0.1, customer.satisfaction - 0.05);
+            });
+        }
+
+        const revenueThisTick = processedRequests.length * tokensPerRequest * PRICE_PER_TOKEN;
+        gameState.money += revenueThisTick;
+        gameState.lifetimeRevenue += revenueThisTick;
+
+        // 5. Simulate New Customer Acquisition
+        if (Math.random() < newCustomerChance) {
+            const newId = gameState.customers.length + 1;
+            gameState.customers.push({ id: newId, satisfaction: 1.0 });
+            logEvent(`🎉 New Customer Acquired! (ID: ${newId})`);
+        }
+
+        // 6. Update UI
+        updateUI();
+    };
+
+    // --- HELPERS ---
     const getUpgradeCost = (id) => {
         const upgrade = upgradesData[id];
         const level = gameState.upgrades[id];
-        return upgrade.baseCost * Math.pow(upgrade.costMultiplier, level) * getPrestigeBonus('cost');
+        return upgrade.baseCost * Math.pow(upgrade.costMultiplier, level);
     };
 
-    const calculateStats = () => {
-        const uptimeBonus = gameState.upgrades.edgeServers * upgradesData.edgeServers.effect;
-        const uptime = Math.min(0.95 + uptimeBonus, 1.0);
-        const customerAcquisitionBonus = gameState.upgrades.marketing * upgradesData.marketing.effect;
-        const customers = 100 * (1 + customerAcquisitionBonus);
-        const satisfaction = 1 + (gameState.upgrades.accuracy * upgradesData.accuracy.effect);
-        const requestBonus = 1 + (gameState.upgrades.gpus * upgradesData.gpus.effect) + (gameState.upgrades.contextLength * upgradesData.contextLength.effect) + (gameState.upgrades.streamingApi * upgradesData.streamingApi.effect);
-        const requestsPerSec = customers * 1 * satisfaction * requestBonus;
-        const tokensPerSec = requestsPerSec * TOKENS_PER_REQUEST;
-        const revenuePerSec = requestsPerSec * PRICE_PER_REQUEST * uptime * getPrestigeBonus('revenue');
-        return { uptime, customers, satisfaction, requestsPerSec, tokensPerSec, revenuePerSec };
-    };
-
-    // --- UI UPDATE FUNCTIONS ---
-    const updateUI = () => {
-        const stats = calculateStats();
-        document.getElementById('revenue-per-sec').textContent = stats.revenuePerSec.toFixed(2);
-        document.getElementById('requests-per-sec').textContent = stats.requestsPerSec.toFixed(0);
-        document.getElementById('tokens-per-sec').textContent = stats.tokensPerSec.toLocaleString();
-        document.getElementById('uptime').textContent = (stats.uptime * 100).toFixed(2);
-        document.getElementById('customers').textContent = stats.customers.toFixed(0);
-        document.getElementById('lifetime-revenue').textContent = gameState.lifetimeRevenue.toFixed(2);
-        document.getElementById('prestige-points').textContent = gameState.prestigePoints;
-        document.getElementById('current-money').textContent = gameState.money.toFixed(2);
-        document.getElementById('prestige-button').disabled = gameState.lifetimeRevenue < PRESTIGE_REQUIREMENT;
-    };
-
+    // --- UI & TABS ---
     const renderUpgrades = () => {
-        const upgradeList = document.getElementById('upgrade-list');
-        upgradeList.innerHTML = '';
+        const equipmentContainer = document.getElementById('equipment-upgrades');
+        const trainingContainer = document.getElementById('training-upgrades');
+        if (!equipmentContainer || !trainingContainer) return;
+        equipmentContainer.innerHTML = '';
+        trainingContainer.innerHTML = '';
+
         for (const id in upgradesData) {
             const upgrade = upgradesData[id];
             const cost = getUpgradeCost(id);
             const level = gameState.upgrades[id];
+
             const item = document.createElement('div');
             item.className = 'upgrade-item';
             item.innerHTML = `
@@ -83,73 +124,63 @@ document.addEventListener('DOMContentLoaded', () => {
                     <strong>${upgrade.name} (Lvl ${level})</strong>
                     <p>${upgrade.description}</p>
                 </div>
-                <button id="buy-${id}" ${gameState.money < cost ? 'disabled' : ''}>Cost: $${cost.toFixed(2)}</button>
+                <button id="buy-${id}">Cost: ${cost.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</button>
             `;
-            upgradeList.appendChild(item);
+
+            if (upgrade.tab === 'equipment') {
+                equipmentContainer.appendChild(item);
+            } else {
+                trainingContainer.appendChild(item);
+            }
             document.getElementById(`buy-${id}`).addEventListener('click', () => buyUpgrade(id));
         }
     };
 
-    // --- SAVE/LOAD FUNCTIONS ---
-    const SAVE_KEY = 'aiTycoonSave';
-    const saveGame = () => {
-        try {
-            localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
-        } catch (error) {
-            console.error('Could not save game state:', error);
+    const updateUI = () => {
+        // Update dashboard stats
+        document.getElementById('current-money').textContent = gameState.money.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+        document.getElementById('customers').textContent = gameState.customers.length;
+        document.getElementById('max-requests').textContent = 10 + (gameState.upgrades.gpus * 10);
+        document.getElementById('uptime').textContent = (0.95 + (gameState.upgrades.edgeServers * 0.01)) * 100;
+        document.getElementById('lifetime-revenue').textContent = gameState.lifetimeRevenue.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+        document.getElementById('prestige-points').textContent = gameState.prestigePoints;
+
+        // Update event log
+        const logContainer = document.getElementById('event-log-list');
+        if (logContainer) {
+            logContainer.innerHTML = gameState.eventLog.map(msg => `<li>${msg}</li>`).join('');
         }
+
+        renderUpgrades();
     };
 
-    const loadGame = () => {
-        try {
-            const savedState = localStorage.getItem(SAVE_KEY);
-            if (savedState) gameState = { ...gameState, ...JSON.parse(savedState) };
-        } catch (error) {
-            console.error('Could not load game state:', error);
-        }
+    const switchTab = (tabId) => {
+        gameState.activeTab = tabId;
+        document.querySelectorAll('.tab-link').forEach(link => link.classList.toggle('active', link.dataset.tab === tabId));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.toggle('active', content.id === tabId));
     };
 
-    // --- GAME ACTIONS ---
     const buyUpgrade = (id) => {
         const cost = getUpgradeCost(id);
         if (gameState.money >= cost) {
             gameState.money -= cost;
             gameState.upgrades[id]++;
-            updateGame();
+            logEvent(`Upgraded ${upgradesData[id].name} to Level ${gameState.upgrades[id]}.`);
+            updateUI();
+        } else {
+            logEvent(`Not enough money to upgrade ${upgradesData[id].name}.`);
         }
     };
 
-    const prestige = () => {
-        if (gameState.lifetimeRevenue >= PRESTIGE_REQUIREMENT) {
-            const newPP = Math.floor(gameState.lifetimeRevenue / PRESTIGE_REQUIREMENT);
-            gameState.prestigePoints += newPP;
-            gameState.money = 100;
-            gameState.lifetimeRevenue = 0;
-            for (const id in gameState.upgrades) gameState.upgrades[id] = 0;
-            updateGame();
-            alert(`You have prestiged! You earned ${newPP} Prestige Points.`);
-        }
-    };
-
-    // --- GAME LOOP & INITIALIZATION ---
-    const updateGame = () => {
-        updateUI();
-        renderUpgrades();
-    };
-
-    const gameLoop = () => {
-        const { revenuePerSec } = calculateStats();
-        gameState.money += revenuePerSec;
-        gameState.lifetimeRevenue += revenuePerSec;
-        updateUI();
-    };
-
+    // --- INITIALIZATION ---
     const init = () => {
-        loadGame();
-        document.getElementById('prestige-button').addEventListener('click', prestige);
+        document.querySelectorAll('.tab-link').forEach(link => {
+            link.addEventListener('click', () => switchTab(link.dataset.tab));
+        });
+
         setInterval(gameLoop, TICK_RATE);
-        setInterval(saveGame, 5000);
-        updateGame();
+        updateUI();
+        switchTab('dashboard');
     };
 
     init();
