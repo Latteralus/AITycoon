@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tycoon</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>AI Tycoon</h1>
+
+    <div id="dashboard">
+        <h2>Dashboard</h2>
+        <p>Current Revenue/sec: <span id="revenue-per-sec">0</span></p>
+        <p>Current Requests/sec: <span id="requests-per-sec">0</span></p>
+        <p>Uptime: <span id="uptime">0</span>%</p>
+        <p>Lifetime Revenue: $<span id="lifetime-revenue">0</span></p>
+        <p>Prestige Points: <span id="prestige-points">0</span></p>
+        <p>Current Money: $<span id="current-money">0</span></p>
+    </div>
+
+    <div id="upgrades">
+        <h2>Upgrades</h2>
+        <div id="upgrade-list"></div>
+    </div>
+
+    <div id="prestige">
+        <h2>Prestige</h2>
+        <p>Reach $1,000,000,000 Lifetime Revenue to prestige.</p>
+        <button id="prestige-button" disabled>Prestige</button>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
