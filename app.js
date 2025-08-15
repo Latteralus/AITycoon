@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- GAME CONFIGURATION ---
     const PRESTIGE_REQUIREMENT = 1_000_000_000;
     const PRICE_PER_REQUEST = 0.01;
+    const TOKENS_PER_REQUEST = 1000;
     const TICK_RATE = 1000; // ms
 
     const upgradesData = {
@@ -49,16 +50,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const satisfaction = 1 + (gameState.upgrades.accuracy * upgradesData.accuracy.effect);
         const requestBonus = 1 + (gameState.upgrades.gpus * upgradesData.gpus.effect) + (gameState.upgrades.contextLength * upgradesData.contextLength.effect) + (gameState.upgrades.streamingApi * upgradesData.streamingApi.effect);
         const requestsPerSec = customers * 1 * satisfaction * requestBonus;
+        const tokensPerSec = requestsPerSec * TOKENS_PER_REQUEST;
         const revenuePerSec = requestsPerSec * PRICE_PER_REQUEST * uptime * getPrestigeBonus('revenue');
-        return { uptime, customers, satisfaction, requestsPerSec, revenuePerSec };
+        return { uptime, customers, satisfaction, requestsPerSec, tokensPerSec, revenuePerSec };
     };
 
     // --- UI UPDATE FUNCTIONS ---
     const updateUI = () => {
         const stats = calculateStats();
         document.getElementById('revenue-per-sec').textContent = stats.revenuePerSec.toFixed(2);
-        document.getElementById('requests-per-sec').textContent = stats.requestsPerSec.toFixed(2);
+        document.getElementById('requests-per-sec').textContent = stats.requestsPerSec.toFixed(0);
+        document.getElementById('tokens-per-sec').textContent = stats.tokensPerSec.toLocaleString();
         document.getElementById('uptime').textContent = (stats.uptime * 100).toFixed(2);
+        document.getElementById('customers').textContent = stats.customers.toFixed(0);
         document.getElementById('lifetime-revenue').textContent = gameState.lifetimeRevenue.toFixed(2);
         document.getElementById('prestige-points').textContent = gameState.prestigePoints;
         document.getElementById('current-money').textContent = gameState.money.toFixed(2);

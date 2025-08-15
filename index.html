@@ -5,29 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Tycoon</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h1>AI Tycoon</h1>
+    <header>
+        <h1>AI Tycoon</h1>
+    </header>
 
-    <div id="dashboard">
-        <h2>Dashboard</h2>
-        <p>Current Revenue/sec: <span id="revenue-per-sec">0</span></p>
-        <p>Current Requests/sec: <span id="requests-per-sec">0</span></p>
-        <p>Uptime: <span id="uptime">0</span>%</p>
-        <p>Lifetime Revenue: $<span id="lifetime-revenue">0</span></p>
-        <p>Prestige Points: <span id="prestige-points">0</span></p>
-        <p>Current Money: $<span id="current-money">0</span></p>
-    </div>
+    <div class="container">
+        <div class="column-left">
+            <div id="dashboard" class="card">
+                <h2>Dashboard</h2>
+                <p><strong>Revenue/sec:</strong> $<span id="revenue-per-sec">0</span></p>
+                <p><strong>Requests/sec:</strong> <span id="requests-per-sec">0</span></p>
+                <p><strong>Tokens/sec:</strong> <span id="tokens-per-sec">0</span></p>
+                <p><strong>Uptime:</strong> <span id="uptime">0</span>%</p>
+                <p><strong>Customers:</strong> <span id="customers">0</span></p>
+                <hr>
+                <p><strong>Lifetime Revenue:</strong> $<span id="lifetime-revenue">0</span></p>
+                <p><strong>Prestige Points:</strong> <span id="prestige-points">0</span></p>
+                <p class="money"><strong>Money:</strong> $<span id="current-money">0</span></p>
+            </div>
 
-    <div id="upgrades">
-        <h2>Upgrades</h2>
-        <div id="upgrade-list"></div>
-    </div>
+            <div id="prestige" class="card">
+                <h2>Prestige</h2>
+                <p>Reach $1,000,000,000 Lifetime Revenue to prestige.</p>
+                <button id="prestige-button" disabled>Prestige</button>
+            </div>
+        </div>
 
-    <div id="prestige">
-        <h2>Prestige</h2>
-        <p>Reach $1,000,000,000 Lifetime Revenue to prestige.</p>
-        <button id="prestige-button" disabled>Prestige</button>
+        <div class="column-right">
+            <div id="upgrades" class="card">
+                <h2>Upgrades</h2>
+                <div id="upgrade-list"></div>
+            </div>
+        </div>
     </div>
 
     <script src="app.js"></script>
