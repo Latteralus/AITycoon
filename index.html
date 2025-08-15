@@ -12,36 +12,65 @@
 <body>
     <header>
         <h1>AI Tycoon</h1>
+        <p class="money-display">Money: <span id="current-money">$100.00</span></p>
     </header>
 
-    <div class="container">
-        <div class="column-left">
-            <div id="dashboard" class="card">
-                <h2>Dashboard</h2>
-                <p><strong>Revenue/sec:</strong> $<span id="revenue-per-sec">0</span></p>
-                <p><strong>Requests/sec:</strong> <span id="requests-per-sec">0</span></p>
-                <p><strong>Tokens/sec:</strong> <span id="tokens-per-sec">0</span></p>
-                <p><strong>Uptime:</strong> <span id="uptime">0</span>%</p>
-                <p><strong>Customers:</strong> <span id="customers">0</span></p>
-                <hr>
-                <p><strong>Lifetime Revenue:</strong> $<span id="lifetime-revenue">0</span></p>
-                <p><strong>Prestige Points:</strong> <span id="prestige-points">0</span></p>
-                <p class="money"><strong>Money:</strong> $<span id="current-money">0</span></p>
+    <div class="main-container">
+        <nav class="tabs">
+            <button class="tab-link active" data-tab="dashboard">Dashboard</button>
+            <button class="tab-link" data-tab="equipment">Equipment</button>
+            <button class="tab-link" data-tab="training">Training</button>
+            <button class="tab-link" data-tab="prestige">Prestige</button>
+        </nav>
+
+        <main class="tab-content-container">
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <div class="dashboard-columns">
+                    <div class="card column-stats">
+                        <h2>Real-Time Stats</h2>
+                        <p><strong>Customers:</strong> <span id="customers">2</span></p>
+                        <p><strong>Uptime:</strong> <span id="uptime">95.00</span>%</p>
+                        <p><strong>Max Requests/sec:</strong> <span id="max-requests">10</span></p>
+                        <p><strong>Revenue/sec (est.):</strong> $<span id="revenue-per-sec">0.00</span></p>
+                         <hr>
+                        <p><strong>Lifetime Revenue:</strong> $<span id="lifetime-revenue">0</span></p>
+                        <p><strong>Prestige Points:</strong> <span id="prestige-points">0</span></p>
+                    </div>
+                    <div class="card column-log">
+                        <h2>Live Event Log</h2>
+                        <ul id="event-log-list"></ul>
+                    </div>
+                </div>
             </div>
 
-            <div id="prestige" class="card">
-                <h2>Prestige</h2>
-                <p>Reach $1,000,000,000 Lifetime Revenue to prestige.</p>
-                <button id="prestige-button" disabled>Prestige</button>
+            <!-- Equipment Tab -->
+            <div id="equipment" class="tab-content">
+                <div class="card">
+                    <h2>Equipment Upgrades</h2>
+                    <p>Improve your hardware to handle more traffic and increase reliability.</p>
+                    <div id="equipment-upgrades"></div>
+                </div>
             </div>
-        </div>
 
-        <div class="column-right">
-            <div id="upgrades" class="card">
-                <h2>Upgrades</h2>
-                <div id="upgrade-list"></div>
+            <!-- Training Tab -->
+            <div id="training" class="tab-content">
+                <div class="card">
+                    <h2>Model & Business Upgrades</h2>
+                    <p>Improve your AI model and business offerings to attract more customers.</p>
+                    <div id="training-upgrades"></div>
+                </div>
             </div>
-        </div>
+
+            <!-- Prestige Tab -->
+            <div id="prestige" class="tab-content">
+                <div class="card">
+                    <h2>Prestige</h2>
+                    <p>Reach $1,000,000,000 Lifetime Revenue to prestige.</p>
+                    <button id="prestige-button" disabled>Prestige Now</button>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script src="app.js"></script>
